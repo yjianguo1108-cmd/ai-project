@@ -1,42 +1,28 @@
-# ==========================
-# Java / Maven 自动生成文件（必须过滤）
-# ==========================
+# 前端项目自动生成的垃圾
+node_modules/
+dist/
+dist-ssr/
+.env
+.env.local
+.vite/
+.idea/
+.DS_Store
+
+# Java/Maven
 target/
 *.class
 *.jar
 *.war
 *.ear
 *.log
-*.iml
-*.iws
-*.ipr
+
+# 编辑器
 .idea/
-out/
-build/
-
-# ==========================
-# Vue / 前端 自动生成文件（必须过滤）
-# ==========================
-node_modules/
-dist/
-dist-ssr/
-.vite/
-.env
-.env.local
-.env.development.local
-.DS_Store
-
-# ==========================
-# IDE 缓存
-# ==========================
 .vscode/
-.idea/
 *.swp
 *.swo
 
-# ==========================
-# 你原来的 IDEA 配置保留
-# ==========================
+# 你原来的配置
 /shelf/
 /workspace.xml
 /httpRequests/
