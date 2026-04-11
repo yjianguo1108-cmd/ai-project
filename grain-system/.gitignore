@@ -1,0 +1,29 @@
+# 前端
+node_modules/
+dist/
+dist-ssr/
+.env
+.env.local
+.vite/
+.DS_Store
+
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 其他
+/shelf/
+/workspace.xml
+/httpRequests/
+/queries/
+/dataSources/
