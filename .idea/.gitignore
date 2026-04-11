@@ -1,0 +1,45 @@
+# ==========================
+# Java / Maven 自动生成文件（必须过滤）
+# ==========================
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.iml
+*.iws
+*.ipr
+.idea/
+out/
+build/
+
+# ==========================
+# Vue / 前端 自动生成文件（必须过滤）
+# ==========================
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.env
+.env.local
+.env.development.local
+.DS_Store
+
+# ==========================
+# IDE 缓存
+# ==========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==========================
+# 你原来的 IDEA 配置保留
+# ==========================
+/shelf/
+/workspace.xml
+/httpRequests/
+/queries/
+/dataSources/
+/dataSources.local.xml

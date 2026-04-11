@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.purchase.mapper.PurchasePaymentMapper">
+
+    <resultMap id="PurchasePaymentVOMap" type="com.grain.system.module.purchase.vo.PurchasePaymentVO">
+        <id column="id" property="id"/>
+        <result column="payment_no" property="paymentNo"/>
+        <result column="order_id" property="orderId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="order_total_amount" property="orderTotalAmount"/>
+        <result column="order_paid_amount" property="orderPaidAmount"/>
+        <result column="farmer_id" property="farmerId"/>
+        <result column="farmer_name" property="farmerName"/>
+        <result column="pay_amount" property="payAmount"/>
+        <result column="pay_method" property="payMethod"/>
+        <result column="flow_no" property="flowNo"/>
+        <result column="pay_time" property="payTime"/>
+        <result column="remark" property="remark"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="operator_name" property="operatorName"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="selectPaymentPage" resultMap="PurchasePaymentVOMap">
+        SELECT p.id, p.payment_no, p.order_id, p.farmer_id, p.pay_amount, p.pay_method,
+               p.flow_no, p.pay_time, p.remark, p.operator_id, p.create_time,
+               o.order_no, o.total_amount AS order_total_amount,
+               o.paid_amount AS order_paid_amount,
+               u.real_name AS farmer_name,
+               op.real_name AS operator_name
+        FROM t_purchase_payment p
+        INNER JOIN t_purchase_order o ON p.order_id = o.id
+        INNER JOIN t_farmer f ON p.farmer_id = f.id
+        INNER JOIN t_user u ON f.user_id = u.id
+        LEFT JOIN t_user op ON p.operator_id = op.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (p.payment_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR o.order_no LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="orderId != null">
+            AND p.order_id = #{orderId}
+        </if>
+        ORDER BY p.create_time DESC
+    </select>
+
+</mapper>

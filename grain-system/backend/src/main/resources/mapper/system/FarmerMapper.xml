@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.system.mapper.FarmerMapper">
+
+    <resultMap id="FarmerVOMap" type="com.grain.system.module.system.vo.FarmerVO">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="real_name" property="realName"/>
+        <result column="phone" property="phone"/>
+        <result column="id_card_mask" property="idCardMask"/>
+        <result column="bank_card_mask" property="bankCardMask"/>
+        <result column="bank_name" property="bankName"/>
+        <result column="preferred_grain_types" property="preferredGrainTypes"/>
+        <result column="audit_status" property="auditStatus"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="selectFarmerPage" resultMap="FarmerVOMap">
+        SELECT f.id, f.user_id, u.real_name, u.phone,
+               f.id_card_mask, f.bank_card_mask, f.bank_name,
+               f.preferred_grain_types, f.audit_status, f.create_time
+        FROM t_farmer f
+        INNER JOIN t_user u ON f.user_id = u.id
+        WHERE u.is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR u.phone LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="auditStatus != null">
+            AND f.audit_status = #{auditStatus}
+        </if>
+        ORDER BY f.create_time DESC
+    </select>
+
+</mapper>

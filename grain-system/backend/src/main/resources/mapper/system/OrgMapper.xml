@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.system.mapper.OrgMapper">
+
+    <select id="selectOrgPage" resultType="com.grain.system.module.system.vo.OrgVO">
+        SELECT o.id, o.user_id, o.org_name, o.org_type, o.contact_name, o.phone,
+               o.address, o.credential_url, o.audit_status, o.reject_reason,
+               o.audit_time, o.create_time
+        FROM t_downstream_org o
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (o.org_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR o.contact_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR o.phone LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="auditStatus != null">
+            AND o.audit_status = #{auditStatus}
+        </if>
+        <if test="orgType != null">
+            AND o.org_type = #{orgType}
+        </if>
+        ORDER BY o.create_time DESC
+    </select>
+
+</mapper>

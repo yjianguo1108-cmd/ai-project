@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.warehouse.mapper.InboundOrderMapper">
+
+    <resultMap id="InboundOrderVOMap" type="com.grain.system.module.warehouse.vo.InboundOrderVO">
+        <id column="id" property="id"/>
+        <result column="inbound_no" property="inboundNo"/>
+        <result column="purchase_order_id" property="purchaseOrderId"/>
+        <result column="purchase_order_no" property="purchaseOrderNo"/>
+        <result column="grain_id" property="grainId"/>
+        <result column="grain_type" property="grainType"/>
+        <result column="grain_grade" property="grainGrade"/>
+        <result column="position_id" property="positionId"/>
+        <result column="position_name" property="positionName"/>
+        <result column="net_weight" property="netWeight"/>
+        <result column="inbound_type" property="inboundType"/>
+        <result column="inbound_reason" property="inboundReason"/>
+        <result column="attachment_url" property="attachmentUrl"/>
+        <result column="status" property="status"/>
+        <result column="confirm_user_id" property="confirmUserId"/>
+        <result column="confirm_user_name" property="confirmUserName"/>
+        <result column="confirm_time" property="confirmTime"/>
+        <result column="create_user_id" property="createUserId"/>
+        <result column="create_user_name" property="createUserName"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="selectInboundPage" resultMap="InboundOrderVOMap">
+        SELECT i.id, i.inbound_no, i.purchase_order_id, i.grain_id, i.position_id,
+               i.net_weight, i.inbound_type, i.inbound_reason, i.attachment_url, i.status,
+               i.confirm_user_id, i.confirm_time, i.create_user_id, i.create_time,
+               p.order_no AS purchase_order_no,
+               g.grain_type, g.grain_grade,
+               s.position_name,
+               cu.real_name AS confirm_user_name,
+               cu2.real_name AS create_user_name
+        FROM t_inbound_order i
+        LEFT JOIN t_purchase_order p ON i.purchase_order_id = p.id
+        INNER JOIN t_grain g ON i.grain_id = g.id
+        INNER JOIN t_storage_position s ON i.position_id = s.id
+        LEFT JOIN t_user cu ON i.confirm_user_id = cu.id
+        LEFT JOIN t_user cu2 ON i.create_user_id = cu2.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (i.inbound_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR p.order_no LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="grainId != null">
+            AND i.grain_id = #{grainId}
+        </if>
+        <if test="positionId != null">
+            AND i.position_id = #{positionId}
+        </if>
+        ORDER BY i.create_time DESC
+    </select>
+
+</mapper>

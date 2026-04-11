@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.purchase.mapper.PurchaseOrderMapper">
+
+    <resultMap id="PurchaseOrderVOMap" type="com.grain.system.module.purchase.vo.PurchaseOrderVO">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="farmer_id" property="farmerId"/>
+        <result column="farmer_name" property="farmerName"/>
+        <result column="farmer_phone" property="farmerPhone"/>
+        <result column="grain_id" property="grainId"/>
+        <result column="grain_type" property="grainType"/>
+        <result column="grain_grade" property="grainGrade"/>
+        <result column="weigh_record_id" property="weighRecordId"/>
+        <result column="weigh_no" property="weighNo"/>
+        <result column="actual_weight" property="actualWeight"/>
+        <result column="ref_price" property="refPrice"/>
+        <result column="actual_price" property="actualPrice"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="paid_amount" property="paidAmount"/>
+        <result column="payment_status" property="paymentStatus"/>
+        <result column="status" property="status"/>
+        <result column="void_reason" property="voidReason"/>
+        <result column="attachment_url" property="attachmentUrl"/>
+        <result column="create_user_id" property="createUserId"/>
+        <result column="create_user_name" property="createUserName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="audit_user_id" property="auditUserId"/>
+        <result column="audit_user_name" property="auditUserName"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectOrderPage" resultMap="PurchaseOrderVOMap">
+        SELECT o.id, o.order_no, o.farmer_id, o.grain_id, o.weigh_record_id,
+               o.actual_weight, o.ref_price, o.actual_price, o.total_amount, o.paid_amount,
+               o.payment_status, o.status, o.void_reason, o.attachment_url,
+               o.create_user_id, o.create_time, o.audit_user_id, o.audit_time, o.update_time,
+               u.real_name AS farmer_name, u.phone AS farmer_phone,
+               g.grain_type, g.grain_grade,
+               w.weigh_no,
+               cu.real_name AS create_user_name,
+               au.real_name AS audit_user_name
+        FROM t_purchase_order o
+        INNER JOIN t_farmer f ON o.farmer_id = f.id
+        INNER JOIN t_user u ON f.user_id = u.id
+        INNER JOIN t_grain g ON o.grain_id = g.id
+        INNER JOIN t_weighing_record w ON o.weigh_record_id = w.id
+        LEFT JOIN t_user cu ON o.create_user_id = cu.id
+        LEFT JOIN t_user au ON o.audit_user_id = au.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (o.order_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR u.real_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null">
+            AND o.status = #{status}
+        </if>
+        <if test="farmerId != null">
+            AND o.farmer_id = #{farmerId}
+        </if>
+        <if test="paymentStatus != null">
+            AND o.payment_status = #{paymentStatus}
+        </if>
+        ORDER BY o.create_time DESC
+    </select>
+
+</mapper>

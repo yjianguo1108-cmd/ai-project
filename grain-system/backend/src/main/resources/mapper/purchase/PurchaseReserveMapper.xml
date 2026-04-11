@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.purchase.mapper.PurchaseReserveMapper">
+
+    <resultMap id="PurchaseReserveVOMap" type="com.grain.system.module.purchase.vo.PurchaseReserveVO">
+        <id column="id" property="id"/>
+        <result column="reserve_no" property="reserveNo"/>
+        <result column="farmer_id" property="farmerId"/>
+        <result column="farmer_name" property="farmerName"/>
+        <result column="farmer_phone" property="farmerPhone"/>
+        <result column="grain_id" property="grainId"/>
+        <result column="grain_type" property="grainType"/>
+        <result column="grain_grade" property="grainGrade"/>
+        <result column="estimated_weight" property="estimatedWeight"/>
+        <result column="reserve_time" property="reserveTime"/>
+        <result column="status" property="status"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="audit_user_id" property="auditUserId"/>
+        <result column="audit_user_name" property="auditUserName"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="create_user_id" property="createUserId"/>
+        <result column="create_user_name" property="createUserName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectReservePage" resultMap="PurchaseReserveVOMap">
+        SELECT r.id, r.reserve_no, r.farmer_id, r.grain_id, r.estimated_weight,
+               r.reserve_time, r.status, r.reject_reason,
+               r.audit_user_id, r.audit_time,
+               r.create_user_id, r.create_time, r.update_time,
+               u.real_name AS farmer_name, u.phone AS farmer_phone,
+               g.grain_type, g.grain_grade,
+               au.real_name AS audit_user_name,
+               cu.real_name AS create_user_name
+        FROM t_purchase_reserve r
+        INNER JOIN t_farmer f ON r.farmer_id = f.id
+        INNER JOIN t_user u ON f.user_id = u.id
+        INNER JOIN t_grain g ON r.grain_id = g.id
+        LEFT JOIN t_user au ON r.audit_user_id = au.id
+        LEFT JOIN t_user cu ON r.create_user_id = cu.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR r.reserve_no LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null">
+            AND r.status = #{status}
+        </if>
+        <if test="farmerId != null">
+            AND r.farmer_id = #{farmerId}
+        </if>
+        ORDER BY r.create_time DESC
+    </select>
+
+</mapper>
