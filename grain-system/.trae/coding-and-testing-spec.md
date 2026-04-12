@@ -1,6 +1,6 @@
 # TRAE 项目编码与自测规范
 
-&#x20;
+&nbsp;
 
 ## 1 用户级工作流程约定
 
@@ -18,23 +18,11 @@
 
 #### 1.1.2 任务状态定义
 
-表格
-
-**状态**
-
-**格式示例**
-
-待确认
-
-`- [ ] 任务名称 (优先级, 工时) - 待确认`
-
-待处理
-
-`- [ ] 任务名称 (优先级, 工时)`
-
-已完成
-
-`- [x] ✅ 任务名称 - YYYY-MM-DD`
+| **状态** | **格式示例** |
+|----------|--------------|
+| 待确认 | `- [ ] 任务名称 (优先级, 工时) - 待确认` |
+| 待处理 | `- [ ] 任务名称 (优先级, 工时)` |
+| 已完成 | `- [x] ✅ 任务名称 - YYYY-MM-DD` |
 
 ***
 
@@ -70,10 +58,30 @@
 4. **无硬编码**：配置、常量、魔法值全部提取到配置文件或常量类
 5. **依赖管理**：仅引入必要依赖，避免版本冲突，使用锁定文件（如`pom.xml`/`package.json`）
 
-### 2.2 提交规范
+### 2.2 VO 与 Mapper 字段一致性检查清单
+
+**修改任何 VO 或涉及列表/详情页字段回显时，必须执行以下检查**：
+
+| # | 检查项 | 操作内容 |
+|---|--------|----------|
+| 1 | VO 文件 @JsonProperty | 所有字段添加 `@JsonProperty`（驼峰命名与前端一致时） |
+| 2 | Mapper XML resultMap | 所有字段添加 `<result column="xxx" property="xxx"/>` 映射 |
+| 3 | Mapper XML SELECT | 查询所有需要的字段，包括计算字段（如 `CASE WHEN`、数学运算） |
+| 4 | convertToVO 基本字段 | 所有字段都调用 `vo.setXxx()` |
+| 5 | convertToVO 关联字段 | 查询关联表获取名称/类型字段（如 farmerName, grainType） |
+| 6 | convertToVO 用户字段 | 通过 `userMapper` 查询用户真实姓名 |
+| 7 | 列表页 vs 详情页 | 确保两种查询方式返回的数据结构一致（列表用 Mapper XML，详情用 convertToVO） |
+
+**典型遗漏场景**：
+- 只改了 VO 文件的 `@JsonProperty`，没改 Mapper XML 的 resultMap
+- 只改了 Mapper XML 的 SELECT，没改 resultMap 的映射
+- 只在 convertToVO 中填充字段，没在 Mapper XML 中填充（导致列表页缺失）
+- 只在 Mapper XML 中填充字段，没在 convertToVO 中填充（导致详情页缺失）
+
+### 2.3 提交规范
 
 - 每次提交必须关联任务编号，提交信息格式：`feat/fix/refactor/...: 描述 (#任务号)`
-- 禁止提交临时调试代码、敏感信息、大体积文件
+- 禁止提交临时调试代码、敏感信息，大体积文件
 - 代码提交前必须通过本地编译与单元测试
 
 ***
@@ -121,38 +129,6 @@
 2. **测试场景必须符合业务逻辑**
    - ❌ 错误：孤立测试单个变量 / 值（如 `assert value > threshold`）
    - ✅ 正确：覆盖完整业务场景，包含前置条件、数据流转与后置校验
-     python
-   运行
-   ```
-   # 示例：符合业务逻辑的测试用例
-   def test_purchase_flow():
-       """
-       业务场景：农户预约→称重→收购→入库完整流程
-       前置条件：农户档案已创建、粮食基础数据已配置
-       执行步骤：
-       1. 创建预约单
-       2. 录入称重数据
-       3. 生成收购单并审核
-       4. 执行入库操作
-       校验点：
-       - 预约单状态变更正确
-       - 称重数据与收购单一致
-       - 库存数据正确更新
-       """
-       # 1. 前置条件准备
-       farmer = create_farmer()
-       grain = create_grain()
-       # 2. 执行业务流程
-       reserve = create_reserve(farmer, grain)
-       weighing = create_weighing(reserve)
-       purchase = create_purchase_order(reserve, weighing)
-       inventory = create_inbound(purchase)
-       # 3. 业务结果校验
-       assert reserve.status == "COMPLETED"
-       assert purchase.total_weight == weighing.gross_weight
-       assert inventory.stock_quantity == weighing.net_weight
-
-   ```
 3. **单元测试覆盖率要求**
    - 核心业务逻辑覆盖率≥90%
    - 异常分支、边界值必须覆盖
@@ -165,4 +141,3 @@
 - `TRAE_TASK_QUEUE.md`：每次会话必读，自动维护，与任务状态同步
 - `README.md`：记录项目概述、环境搭建、启动步骤、核心功能说明
 - `docs/` 目录：存放概要设计、接口文档、数据库设计等核心文档
-

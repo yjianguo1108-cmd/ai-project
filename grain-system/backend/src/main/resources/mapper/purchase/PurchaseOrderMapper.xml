@@ -19,8 +19,11 @@
         <result column="actual_price" property="actualPrice"/>
         <result column="total_amount" property="totalAmount"/>
         <result column="paid_amount" property="paidAmount"/>
+        <result column="unpaid_amount" property="unpaidAmount"/>
         <result column="payment_status" property="paymentStatus"/>
+        <result column="payment_status_name" property="paymentStatusName"/>
         <result column="status" property="status"/>
+        <result column="status_name" property="statusName"/>
         <result column="void_reason" property="voidReason"/>
         <result column="attachment_url" property="attachmentUrl"/>
         <result column="create_user_id" property="createUserId"/>
@@ -35,13 +38,16 @@
     <select id="selectOrderPage" resultMap="PurchaseOrderVOMap">
         SELECT o.id, o.order_no, o.farmer_id, o.grain_id, o.weigh_record_id,
                o.actual_weight, o.ref_price, o.actual_price, o.total_amount, o.paid_amount,
+               (o.total_amount - o.paid_amount) AS unpaid_amount,
                o.payment_status, o.status, o.void_reason, o.attachment_url,
                o.create_user_id, o.create_time, o.audit_user_id, o.audit_time, o.update_time,
                u.real_name AS farmer_name, u.phone AS farmer_phone,
                g.grain_type, g.grain_grade,
                w.weigh_no,
                cu.real_name AS create_user_name,
-               au.real_name AS audit_user_name
+               au.real_name AS audit_user_name,
+               CASE o.payment_status WHEN 0 THEN '未付款' WHEN 1 THEN '部分付款' WHEN 2 THEN '已付清' ELSE '未知' END AS payment_status_name,
+               CASE o.status WHEN 0 THEN '草稿' WHEN 1 THEN '待审核' WHEN 2 THEN '审核通过' WHEN 3 THEN '已完成' WHEN 4 THEN '已作废' ELSE '未知' END AS status_name
         FROM t_purchase_order o
         INNER JOIN t_farmer f ON o.farmer_id = f.id
         INNER JOIN t_user u ON f.user_id = u.id

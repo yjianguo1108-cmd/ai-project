@@ -36,3 +36,10 @@ export function deleteInbound(id) {
     method: 'delete'
   })
 }
+
+export function getAvailableInboundOrders() {
+  return request({
+    url: '/warehouse/inbound/available-orders',
+    method: 'get'
+  })
+}

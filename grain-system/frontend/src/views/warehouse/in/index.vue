@@ -114,9 +114,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
-import { getInboundList, getInbound, createInbound, confirmInbound, deleteInbound } from '@/api/warehouse/inbound'
+import { getInboundList, getInbound, createInbound, confirmInbound, deleteInbound, getAvailableInboundOrders } from '@/api/warehouse/inbound'
 import { getGrainList, getPositionList } from '@/api/config'
-import { getOrderList } from '@/api/purchase/order'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -162,11 +161,11 @@ async function loadOptions() {
     const [grainRes, positionRes, orderRes] = await Promise.all([
       getGrainList({ status: 1 }),
       getPositionList({ status: 1 }),
-      getOrderList({ status: 2, size: 100 })
+      getAvailableInboundOrders()
     ])
     grainOptions.value = grainRes.data || []
     positionOptions.value = positionRes.data || []
-    orderOptions.value = orderRes.data?.records ?? []
+    orderOptions.value = orderRes.data || []
   } catch (e) { console.error(e) }
 }
 

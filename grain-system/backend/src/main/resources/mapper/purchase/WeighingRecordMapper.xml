@@ -15,7 +15,9 @@
         <result column="net_weight" property="netWeight"/>
         <result column="weigh_time" property="weighTime"/>
         <result column="data_source" property="dataSource"/>
+        <result column="data_source_name" property="dataSourceName"/>
         <result column="status" property="status"/>
+        <result column="status_name" property="statusName"/>
         <result column="remark" property="remark"/>
         <result column="audit_user_id" property="auditUserId"/>
         <result column="audit_user_name" property="auditUserName"/>
@@ -32,7 +34,9 @@
                r.reserve_no,
                d.device_name AS weighbridge_name,
                au.real_name AS audit_user_name,
-               cu.real_name AS create_user_name
+               cu.real_name AS create_user_name,
+               CASE w.data_source WHEN 0 THEN '本地录入' WHEN 1 THEN '设备同步' ELSE '未知' END AS data_source_name,
+               CASE w.status WHEN 0 THEN '待审核' WHEN 1 THEN '已审核' WHEN 2 THEN '已作废' ELSE '未知' END AS status_name
         FROM t_weighing_record w
         LEFT JOIN t_purchase_reserve r ON w.reserve_id = r.id
         LEFT JOIN t_device_base d ON w.weighbridge_id = d.id

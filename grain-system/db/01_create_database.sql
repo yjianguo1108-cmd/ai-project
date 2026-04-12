@@ -296,6 +296,8 @@ CREATE TABLE IF NOT EXISTS t_purchase_payment (
     pay_amount  DECIMAL(12,2) NOT NULL COMMENT '本次付款金额',
     pay_method  TINYINT       NOT NULL COMMENT '付款方式(0现金/1银行转账/2微信/3支付宝)',
     pay_time    DATETIME      NOT NULL COMMENT '付款时间',
+    payment_account VARCHAR(64)   NULL COMMENT '付款账号',
+    recipient_name VARCHAR(64)   NULL COMMENT '收款人姓名',
     flow_no     VARCHAR(64)   NULL COMMENT '付款流水号',
     operator_id INT           NOT NULL COMMENT '操作员',
     remark      VARCHAR(200)  NULL COMMENT '备注',

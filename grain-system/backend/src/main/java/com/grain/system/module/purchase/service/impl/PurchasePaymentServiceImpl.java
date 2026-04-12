@@ -3,6 +3,7 @@ package com.grain.system.module.purchase.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.grain.system.common.constant.RedisKey;
 import com.grain.system.common.exception.BusinessException;
 import com.grain.system.module.purchase.dto.PurchasePaymentCreateDTO;
 import com.grain.system.module.purchase.entity.PurchaseOrder;
@@ -11,13 +12,19 @@ import com.grain.system.module.purchase.mapper.PurchaseOrderMapper;
 import com.grain.system.module.purchase.mapper.PurchasePaymentMapper;
 import com.grain.system.module.purchase.service.PurchasePaymentService;
 import com.grain.system.module.purchase.vo.PurchasePaymentVO;
+import com.grain.system.module.system.entity.Farmer;
+import com.grain.system.module.system.entity.User;
+import com.grain.system.module.system.mapper.FarmerMapper;
+import com.grain.system.module.system.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +32,9 @@ public class PurchasePaymentServiceImpl implements PurchasePaymentService {
 
     private final PurchasePaymentMapper paymentMapper;
     private final PurchaseOrderMapper orderMapper;
+    private final FarmerMapper farmerMapper;
+    private final UserMapper userMapper;
+    private final StringRedisTemplate redisTemplate;
 
     private static final DateTimeFormatter PAYMENT_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -55,10 +65,12 @@ public class PurchasePaymentServiceImpl implements PurchasePaymentService {
         PurchasePayment payment = new PurchasePayment();
         payment.setPaymentNo(generatePaymentNo());
         payment.setOrderId(dto.getOrderId());
-        payment.setFarmerId(dto.getFarmerId());
+        payment.setFarmerId(order.getFarmerId());
         payment.setPayAmount(dto.getPayAmount());
         payment.setPayMethod(dto.getPayMethod());
         payment.setPayTime(dto.getPayTime() != null ? dto.getPayTime() : LocalDateTime.now());
+        payment.setPaymentAccount(dto.getPaymentAccount());
+        payment.setRecipientName(dto.getRecipientName());
         payment.setRemark(dto.getRemark());
         payment.setOperatorId(operatorId);
         paymentMapper.insert(payment);
@@ -96,12 +108,23 @@ public class PurchasePaymentServiceImpl implements PurchasePaymentService {
         paymentMapper.deleteById(id);
     }
 
+    @Override
+    public List<PurchaseOrder> getAvailableOrdersForPayment() {
+        LambdaQueryWrapper<PurchaseOrder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PurchaseOrder::getStatus, 2)
+               .in(PurchaseOrder::getPaymentStatus, 0, 1)
+               .orderByDesc(PurchaseOrder::getCreateTime);
+        return orderMapper.selectList(wrapper);
+    }
+
     private String generatePaymentNo() {
         String dateStr = LocalDateTime.now().format(PAYMENT_NO_FORMATTER);
-        long count = paymentMapper.selectCount(
-                new LambdaQueryWrapper<PurchasePayment>()
-                        .likeLeft(PurchasePayment::getPaymentNo, "PP" + dateStr));
-        return String.format("PP%s%04d", dateStr, count + 1);
+        String redisKey = RedisKey.ORDER_PO_SEQUENCE + ":payment:" + dateStr;
+        Long sequence = redisTemplate.opsForValue().increment(redisKey);
+        if (sequence == null) {
+            sequence = 1L;
+        }
+        return String.format("PP%s%04d", dateStr, sequence);
     }
 
     private PurchasePaymentVO convertToVO(PurchasePayment payment) {
@@ -113,10 +136,42 @@ public class PurchasePaymentServiceImpl implements PurchasePaymentService {
         vo.setPayAmount(payment.getPayAmount());
         vo.setPayMethod(payment.getPayMethod());
         vo.setPayTime(payment.getPayTime());
+        vo.setPaymentAccount(payment.getPaymentAccount());
+        vo.setRecipientName(payment.getRecipientName());
         vo.setFlowNo(payment.getFlowNo());
         vo.setRemark(payment.getRemark());
         vo.setOperatorId(payment.getOperatorId());
         vo.setCreateTime(payment.getCreateTime());
+
+        vo.setPayMethodName(switch (payment.getPayMethod()) { case 1 -> "现金"; case 2 -> "银行转账"; case 3 -> "微信支付"; case 4 -> "支付宝"; default -> "未知"; });
+
+        if (payment.getOrderId() != null) {
+            PurchaseOrder order = orderMapper.selectById(payment.getOrderId());
+            if (order != null) {
+                vo.setOrderNo(order.getOrderNo());
+                vo.setOrderTotalAmount(order.getTotalAmount());
+                vo.setOrderPaidAmount(order.getPaidAmount());
+                vo.setOrderUnpaidAmount(order.getTotalAmount().subtract(order.getPaidAmount()));
+            }
+        }
+
+        if (payment.getFarmerId() != null) {
+            Farmer farmer = farmerMapper.selectById(payment.getFarmerId());
+            if (farmer != null && farmer.getUserId() != null) {
+                User user = userMapper.selectById(farmer.getUserId());
+                if (user != null) {
+                    vo.setFarmerName(user.getRealName());
+                }
+            }
+        }
+
+        if (payment.getOperatorId() != null) {
+            User operator = userMapper.selectById(payment.getOperatorId());
+            if (operator != null) {
+                vo.setOperatorName(operator.getRealName());
+            }
+        }
+
         return vo;
     }
 }

@@ -10,10 +10,14 @@
         <result column="order_no" property="orderNo"/>
         <result column="order_total_amount" property="orderTotalAmount"/>
         <result column="order_paid_amount" property="orderPaidAmount"/>
+        <result column="order_unpaid_amount" property="orderUnpaidAmount"/>
         <result column="farmer_id" property="farmerId"/>
         <result column="farmer_name" property="farmerName"/>
         <result column="pay_amount" property="payAmount"/>
         <result column="pay_method" property="payMethod"/>
+        <result column="pay_method_name" property="payMethodName"/>
+        <result column="payment_account" property="paymentAccount"/>
+        <result column="recipient_name" property="recipientName"/>
         <result column="flow_no" property="flowNo"/>
         <result column="pay_time" property="payTime"/>
         <result column="remark" property="remark"/>
@@ -25,10 +29,13 @@
     <select id="selectPaymentPage" resultMap="PurchasePaymentVOMap">
         SELECT p.id, p.payment_no, p.order_id, p.farmer_id, p.pay_amount, p.pay_method,
                p.flow_no, p.pay_time, p.remark, p.operator_id, p.create_time,
+               p.payment_account, p.recipient_name,
                o.order_no, o.total_amount AS order_total_amount,
                o.paid_amount AS order_paid_amount,
+               (o.total_amount - o.paid_amount) AS order_unpaid_amount,
                u.real_name AS farmer_name,
-               op.real_name AS operator_name
+               op.real_name AS operator_name,
+               CASE p.pay_method WHEN 1 THEN '现金' WHEN 2 THEN '银行转账' WHEN 3 THEN '微信支付' WHEN 4 THEN '支付宝' ELSE '未知' END AS pay_method_name
         FROM t_purchase_payment p
         INNER JOIN t_purchase_order o ON p.order_id = o.id
         INNER JOIN t_farmer f ON p.farmer_id = f.id

@@ -3,6 +3,7 @@ package com.grain.system.module.warehouse.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.grain.system.common.constant.RedisKey;
 import com.grain.system.common.exception.BusinessException;
 import com.grain.system.module.purchase.entity.PurchaseOrder;
 import com.grain.system.module.purchase.mapper.PurchaseOrderMapper;
@@ -12,13 +13,20 @@ import com.grain.system.module.warehouse.mapper.InboundOrderMapper;
 import com.grain.system.module.warehouse.mapper.InventoryMapper;
 import com.grain.system.module.warehouse.service.InboundOrderService;
 import com.grain.system.module.warehouse.vo.InboundOrderVO;
+import com.grain.system.module.system.entity.Grain;
+import com.grain.system.module.system.entity.StoragePosition;
+import com.grain.system.module.system.mapper.GrainMapper;
+import com.grain.system.module.system.mapper.StoragePositionMapper;
+import com.grain.system.module.system.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +35,10 @@ public class InboundOrderServiceImpl implements InboundOrderService {
     private final InboundOrderMapper inboundMapper;
     private final InventoryMapper inventoryMapper;
     private final PurchaseOrderMapper orderMapper;
+    private final GrainMapper grainMapper;
+    private final StoragePositionMapper positionMapper;
+    private final UserMapper userMapper;
+    private final StringRedisTemplate redisTemplate;
 
     private static final DateTimeFormatter INBOUND_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -48,7 +60,7 @@ public class InboundOrderServiceImpl implements InboundOrderService {
     public void createInbound(Integer purchaseOrderId, Integer grainId, Integer positionId, BigDecimal weight, Integer operatorId) {
         PurchaseOrder order = orderMapper.selectById(purchaseOrderId);
         if (order == null) throw new BusinessException("收购单不存在");
-        if (order.getStatus() != 2) throw new BusinessException("收购单状态不允许入库");
+        if (order.getStatus() != 3) throw new BusinessException("只有已完成的收购单可以入库");
 
         InboundOrder inbound = new InboundOrder();
         inbound.setInboundNo(generateInboundNo());
@@ -60,6 +72,14 @@ public class InboundOrderServiceImpl implements InboundOrderService {
         inbound.setStatus(0);
         inbound.setCreateUserId(operatorId);
         inboundMapper.insert(inbound);
+    }
+
+    @Override
+    public List<PurchaseOrder> getAvailableOrdersForInbound() {
+        LambdaQueryWrapper<PurchaseOrder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PurchaseOrder::getStatus, 3)
+               .orderByDesc(PurchaseOrder::getCreateTime);
+        return orderMapper.selectList(wrapper);
     }
 
     @Override
@@ -108,10 +128,12 @@ public class InboundOrderServiceImpl implements InboundOrderService {
 
     private String generateInboundNo() {
         String dateStr = LocalDateTime.now().format(INBOUND_NO_FORMATTER);
-        long count = inboundMapper.selectCount(
-                new LambdaQueryWrapper<InboundOrder>()
-                        .likeLeft(InboundOrder::getInboundNo, "IN" + dateStr));
-        return String.format("IN%s%04d", dateStr, count + 1);
+        String redisKey = RedisKey.ORDER_PO_SEQUENCE + ":inbound:" + dateStr;
+        Long sequence = redisTemplate.opsForValue().increment(redisKey);
+        if (sequence == null) {
+            sequence = 1L;
+        }
+        return String.format("IN%s%04d", dateStr, sequence);
     }
 
     private InboundOrderVO convertToVO(InboundOrder inbound) {
@@ -130,6 +152,29 @@ public class InboundOrderServiceImpl implements InboundOrderService {
         vo.setConfirmTime(inbound.getConfirmTime());
         vo.setCreateUserId(inbound.getCreateUserId());
         vo.setCreateTime(inbound.getCreateTime());
+
+        if (inbound.getPurchaseOrderId() != null) {
+            PurchaseOrder order = orderMapper.selectById(inbound.getPurchaseOrderId());
+            if (order != null) {
+                vo.setPurchaseOrderNo(order.getOrderNo());
+            }
+        }
+
+        if (inbound.getGrainId() != null) {
+            Grain grain = grainMapper.selectById(inbound.getGrainId());
+            if (grain != null) {
+                vo.setGrainType(grain.getGrainType());
+                vo.setGrainGrade(grain.getGrainGrade());
+            }
+        }
+
+        if (inbound.getPositionId() != null) {
+            StoragePosition position = positionMapper.selectById(inbound.getPositionId());
+            if (position != null) {
+                vo.setPositionName(position.getPositionName());
+            }
+        }
+
         return vo;
     }
 }

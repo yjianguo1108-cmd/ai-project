@@ -9,7 +9,10 @@ import com.grain.system.module.warehouse.mapper.InventoryLedgerMapper;
 import com.grain.system.module.warehouse.service.InventoryLedgerService;
 import com.grain.system.module.warehouse.vo.InventoryLedgerVO;
 import com.grain.system.module.system.entity.Grain;
+import com.grain.system.module.system.entity.StoragePosition;
 import com.grain.system.module.system.mapper.GrainMapper;
+import com.grain.system.module.system.mapper.StoragePositionMapper;
+import com.grain.system.module.system.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +25,8 @@ public class InventoryLedgerServiceImpl implements InventoryLedgerService {
 
     private final InventoryLedgerMapper ledgerMapper;
     private final GrainMapper grainMapper;
+    private final StoragePositionMapper positionMapper;
+    private final UserMapper userMapper;
 
     @Override
     public IPage<InventoryLedgerVO> getLedgerPage(int page, int size, Integer grainId, Integer storagePositionId) {
@@ -60,6 +65,22 @@ public class InventoryLedgerServiceImpl implements InventoryLedgerService {
         vo.setCurrentWeight(inventory.getCurrentStock());
         vo.setCreateTime(inventory.getCreateTime());
         vo.setUpdateTime(inventory.getUpdateTime());
+
+        if (inventory.getGrainId() != null) {
+            Grain grain = grainMapper.selectById(inventory.getGrainId());
+            if (grain != null) {
+                vo.setGrainType(grain.getGrainType());
+                vo.setGrainGrade(grain.getGrainGrade());
+            }
+        }
+
+        if (inventory.getPositionId() != null) {
+            StoragePosition position = positionMapper.selectById(inventory.getPositionId());
+            if (position != null) {
+                vo.setStoragePositionName(position.getPositionName());
+            }
+        }
+
         return vo;
     }
 }

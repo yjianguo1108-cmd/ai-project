@@ -25,6 +25,10 @@ public class PurchasePayment {
 
     private LocalDateTime payTime;
 
+    private String paymentAccount;
+
+    private String recipientName;
+
     private String flowNo;
 
     private Integer operatorId;

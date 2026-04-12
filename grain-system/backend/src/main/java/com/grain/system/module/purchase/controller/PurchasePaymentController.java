@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.grain.system.common.result.R;
 import com.grain.system.common.util.SecurityUtil;
 import com.grain.system.module.purchase.dto.PurchasePaymentCreateDTO;
+import com.grain.system.module.purchase.entity.PurchaseOrder;
 import com.grain.system.module.purchase.service.PurchasePaymentService;
 import com.grain.system.module.purchase.vo.PurchasePaymentVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "收购付款管理")
 @RestController
@@ -37,6 +40,13 @@ public class PurchasePaymentController {
     @PreAuthorize("hasAuthority('purchase:payment:list') or hasAuthority('ROLE_ADMIN')")
     public R<PurchasePaymentVO> getById(@PathVariable Integer id) {
         return R.ok(paymentService.getPaymentById(id));
+    }
+
+    @Operation(summary = "获取可付款的收购单列表")
+    @GetMapping("/available-orders")
+    @PreAuthorize("hasAuthority('purchase:payment:create') or hasAuthority('ROLE_ADMIN')")
+    public R<List<PurchaseOrder>> getAvailableOrders() {
+        return R.ok(paymentService.getAvailableOrdersForPayment());
     }
 
     @Operation(summary = "新增付款记录")

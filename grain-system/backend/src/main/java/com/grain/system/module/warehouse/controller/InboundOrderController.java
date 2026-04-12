@@ -3,6 +3,7 @@ package com.grain.system.module.warehouse.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.grain.system.common.result.R;
 import com.grain.system.common.util.SecurityUtil;
+import com.grain.system.module.purchase.entity.PurchaseOrder;
 import com.grain.system.module.warehouse.service.InboundOrderService;
 import com.grain.system.module.warehouse.vo.InboundOrderVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "粮食入库管理")
@@ -39,6 +41,13 @@ public class InboundOrderController {
     @PreAuthorize("hasAuthority('warehouse:inbound:list') or hasAuthority('ROLE_ADMIN')")
     public R<InboundOrderVO> getById(@PathVariable Integer id) {
         return R.ok(inboundService.getInboundById(id));
+    }
+
+    @Operation(summary = "获取可入库的收购单列表")
+    @GetMapping("/available-orders")
+    @PreAuthorize("hasAuthority('warehouse:inbound:create') or hasAuthority('ROLE_ADMIN')")
+    public R<List<PurchaseOrder>> getAvailableOrders() {
+        return R.ok(inboundService.getAvailableOrdersForInbound());
     }
 
     @Operation(summary = "创建入库记录")

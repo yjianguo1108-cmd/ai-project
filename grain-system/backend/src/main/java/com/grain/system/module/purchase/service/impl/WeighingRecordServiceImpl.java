@@ -3,6 +3,7 @@ package com.grain.system.module.purchase.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.grain.system.common.constant.RedisKey;
 import com.grain.system.common.exception.BusinessException;
 import com.grain.system.module.purchase.dto.WeighingRecordCreateDTO;
 import com.grain.system.module.purchase.entity.WeighingRecord;
@@ -11,7 +12,10 @@ import com.grain.system.module.purchase.service.WeighingRecordService;
 import com.grain.system.module.purchase.vo.WeighingRecordVO;
 import com.grain.system.module.purchase.entity.PurchaseReserve;
 import com.grain.system.module.purchase.mapper.PurchaseReserveMapper;
+import com.grain.system.module.system.entity.User;
+import com.grain.system.module.system.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +29,8 @@ public class WeighingRecordServiceImpl implements WeighingRecordService {
 
     private final WeighingRecordMapper weighingMapper;
     private final PurchaseReserveMapper reserveMapper;
+    private final UserMapper userMapper;
+    private final StringRedisTemplate redisTemplate;
 
     private static final DateTimeFormatter WEIGH_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -128,10 +134,12 @@ public class WeighingRecordServiceImpl implements WeighingRecordService {
 
     private String generateWeighNo() {
         String dateStr = LocalDateTime.now().format(WEIGH_NO_FORMATTER);
-        long count = weighingMapper.selectCount(
-                new LambdaQueryWrapper<WeighingRecord>()
-                        .likeLeft(WeighingRecord::getWeighNo, "WT" + dateStr));
-        return String.format("WT%s%04d", dateStr, count + 1);
+        String redisKey = RedisKey.ORDER_PO_SEQUENCE + ":weigh:" + dateStr;
+        Long sequence = redisTemplate.opsForValue().increment(redisKey);
+        if (sequence == null) {
+            sequence = 1L;
+        }
+        return String.format("WT%s%04d", dateStr, sequence);
     }
 
     private WeighingRecordVO convertToVO(WeighingRecord record) {
@@ -151,6 +159,31 @@ public class WeighingRecordServiceImpl implements WeighingRecordService {
         vo.setAuditTime(record.getAuditTime());
         vo.setCreateUserId(record.getCreateUserId());
         vo.setCreateTime(record.getCreateTime());
+
+        vo.setDataSourceName(record.getDataSource() == 0 ? "本地录入" : "设备同步");
+        vo.setStatusName(switch (record.getStatus()) { case 0 -> "待审核"; case 1 -> "已审核"; case 2 -> "已作废"; default -> "未知"; });
+
+        if (record.getReserveId() != null) {
+            PurchaseReserve reserve = reserveMapper.selectById(record.getReserveId());
+            if (reserve != null) {
+                vo.setReserveNo(reserve.getReserveNo());
+            }
+        }
+
+        if (record.getAuditUserId() != null) {
+            User auditUser = userMapper.selectById(record.getAuditUserId());
+            if (auditUser != null) {
+                vo.setAuditUserName(auditUser.getRealName());
+            }
+        }
+
+        if (record.getCreateUserId() != null) {
+            User createUser = userMapper.selectById(record.getCreateUserId());
+            if (createUser != null) {
+                vo.setCreateUserName(createUser.getRealName());
+            }
+        }
+
         return vo;
     }
 }

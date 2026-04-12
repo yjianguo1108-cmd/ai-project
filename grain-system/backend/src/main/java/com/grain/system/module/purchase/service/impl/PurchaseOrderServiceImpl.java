@@ -14,8 +14,12 @@ import com.grain.system.module.purchase.mapper.PurchaseReserveMapper;
 import com.grain.system.module.purchase.mapper.WeighingRecordMapper;
 import com.grain.system.module.purchase.service.PurchaseOrderService;
 import com.grain.system.module.purchase.vo.PurchaseOrderVO;
+import com.grain.system.module.system.entity.Farmer;
 import com.grain.system.module.system.entity.Grain;
+import com.grain.system.module.system.entity.User;
+import com.grain.system.module.system.mapper.FarmerMapper;
 import com.grain.system.module.system.mapper.GrainMapper;
+import com.grain.system.module.system.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -32,7 +36,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final PurchaseOrderMapper orderMapper;
     private final PurchaseReserveMapper reserveMapper;
     private final WeighingRecordMapper weighingMapper;
+    private final FarmerMapper farmerMapper;
     private final GrainMapper grainMapper;
+    private final UserMapper userMapper;
     private final StringRedisTemplate redisTemplate;
 
     private static final DateTimeFormatter ORDER_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -56,6 +62,12 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         WeighingRecord weighing = weighingMapper.selectById(dto.getWeighRecordId());
         if (weighing == null) throw new BusinessException("称重记录不存在");
         if (weighing.getStatus() != 1) throw new BusinessException("称重记录未审核确认，无法创建收购单");
+
+        LambdaQueryWrapper<PurchaseOrder> orderCheck = new LambdaQueryWrapper<>();
+        orderCheck.eq(PurchaseOrder::getWeighRecordId, dto.getWeighRecordId());
+        if (orderMapper.selectCount(orderCheck) > 0) {
+            throw new BusinessException("该称重记录已创建收购单据，不能重复创建");
+        }
 
         Grain grain = grainMapper.selectById(dto.getGrainId());
         if (grain == null) throw new BusinessException("粮食品种不存在");
@@ -170,6 +182,50 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         vo.setAuditUserId(order.getAuditUserId());
         vo.setAuditTime(order.getAuditTime());
         vo.setUpdateTime(order.getUpdateTime());
+
+        vo.setPaymentStatusName(switch (order.getPaymentStatus()) { case 0 -> "未付款"; case 1 -> "部分付款"; case 2 -> "已付清"; default -> "未知"; });
+        vo.setStatusName(switch (order.getStatus()) { case 0 -> "草稿"; case 1 -> "待审核"; case 2 -> "审核通过"; case 3 -> "已完成"; case 4 -> "已作废"; default -> "未知"; });
+
+        if (order.getFarmerId() != null) {
+            Farmer farmer = farmerMapper.selectById(order.getFarmerId());
+            if (farmer != null && farmer.getUserId() != null) {
+                User user = userMapper.selectById(farmer.getUserId());
+                if (user != null) {
+                    vo.setFarmerName(user.getRealName());
+                    vo.setFarmerPhone(user.getPhone());
+                }
+            }
+        }
+
+        if (order.getGrainId() != null) {
+            Grain grain = grainMapper.selectById(order.getGrainId());
+            if (grain != null) {
+                vo.setGrainType(grain.getGrainType());
+                vo.setGrainGrade(grain.getGrainGrade());
+            }
+        }
+
+        if (order.getWeighRecordId() != null) {
+            WeighingRecord weighing = weighingMapper.selectById(order.getWeighRecordId());
+            if (weighing != null) {
+                vo.setWeighNo(weighing.getWeighNo());
+            }
+        }
+
+        if (order.getCreateUserId() != null) {
+            User createUser = userMapper.selectById(order.getCreateUserId());
+            if (createUser != null) {
+                vo.setCreateUserName(createUser.getRealName());
+            }
+        }
+
+        if (order.getAuditUserId() != null) {
+            User auditUser = userMapper.selectById(order.getAuditUserId());
+            if (auditUser != null) {
+                vo.setAuditUserName(auditUser.getRealName());
+            }
+        }
+
         return vo;
     }
 }

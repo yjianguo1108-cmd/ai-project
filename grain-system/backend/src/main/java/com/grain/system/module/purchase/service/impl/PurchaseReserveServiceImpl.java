@@ -3,6 +3,7 @@ package com.grain.system.module.purchase.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.grain.system.common.constant.RedisKey;
 import com.grain.system.common.exception.BusinessException;
 import com.grain.system.module.purchase.dto.PurchaseReserveCreateDTO;
 import com.grain.system.module.purchase.entity.PurchaseReserve;
@@ -10,8 +11,13 @@ import com.grain.system.module.purchase.mapper.PurchaseReserveMapper;
 import com.grain.system.module.purchase.service.PurchaseReserveService;
 import com.grain.system.module.purchase.vo.PurchaseReserveVO;
 import com.grain.system.module.system.entity.Farmer;
+import com.grain.system.module.system.entity.Grain;
+import com.grain.system.module.system.entity.User;
 import com.grain.system.module.system.mapper.FarmerMapper;
+import com.grain.system.module.system.mapper.GrainMapper;
+import com.grain.system.module.system.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +31,9 @@ public class PurchaseReserveServiceImpl implements PurchaseReserveService {
 
     private final PurchaseReserveMapper reserveMapper;
     private final FarmerMapper farmerMapper;
+    private final GrainMapper grainMapper;
+    private final UserMapper userMapper;
+    private final StringRedisTemplate redisTemplate;
 
     private static final DateTimeFormatter RESERVE_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -131,10 +140,12 @@ public class PurchaseReserveServiceImpl implements PurchaseReserveService {
 
     private String generateReserveNo() {
         String dateStr = LocalDateTime.now().format(RESERVE_NO_FORMATTER);
-        long count = reserveMapper.selectCount(
-                new LambdaQueryWrapper<PurchaseReserve>()
-                        .likeLeft(PurchaseReserve::getReserveNo, "RV" + dateStr));
-        return String.format("RV%s%04d", dateStr, count + 1);
+        String redisKey = RedisKey.ORDER_PO_SEQUENCE + ":reserve:" + dateStr;
+        Long sequence = redisTemplate.opsForValue().increment(redisKey);
+        if (sequence == null) {
+            sequence = 1L;
+        }
+        return String.format("RV%s%04d", dateStr, sequence);
     }
 
     private PurchaseReserveVO convertToVO(PurchaseReserve reserve) {
@@ -152,6 +163,26 @@ public class PurchaseReserveServiceImpl implements PurchaseReserveService {
         vo.setCreateUserId(reserve.getCreateUserId());
         vo.setCreateTime(reserve.getCreateTime());
         vo.setUpdateTime(reserve.getUpdateTime());
+
+        if (reserve.getFarmerId() != null) {
+            Farmer farmer = farmerMapper.selectById(reserve.getFarmerId());
+            if (farmer != null && farmer.getUserId() != null) {
+                User user = userMapper.selectById(farmer.getUserId());
+                if (user != null) {
+                    vo.setFarmerName(user.getRealName());
+                    vo.setFarmerPhone(user.getPhone());
+                }
+            }
+        }
+
+        if (reserve.getGrainId() != null) {
+            Grain grain = grainMapper.selectById(reserve.getGrainId());
+            if (grain != null) {
+                vo.setGrainType(grain.getGrainType());
+                vo.setGrainGrade(grain.getGrainGrade());
+            }
+        }
+
         return vo;
     }
 }
