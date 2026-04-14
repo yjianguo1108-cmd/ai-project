@@ -50,6 +50,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/v1/auth/login",
                     "/api/v1/auth/logout",
+                    "/api/v1/downstream/**",
+                    "/downstream/**",
                     "/doc.html",
                     "/webjars/**",
                     "/v3/api-docs/**",

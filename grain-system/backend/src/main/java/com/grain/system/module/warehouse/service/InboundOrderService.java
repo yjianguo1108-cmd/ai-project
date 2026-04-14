@@ -19,4 +19,6 @@ public interface InboundOrderService {
     void deleteInbound(Integer id);
 
     List<PurchaseOrder> getAvailableOrdersForInbound();
+
+    void createInboundForPurchaseOrder(Integer purchaseOrderId, Integer positionId, Integer operatorId);
 }

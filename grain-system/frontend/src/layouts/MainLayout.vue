@@ -18,7 +18,7 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        
+
         <el-sub-menu index="/system">
           <template #title>
             <el-icon><Setting /></el-icon>
@@ -33,19 +33,37 @@
           <el-menu-item index="/system/params">系统参数</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="/business">
+        <el-sub-menu index="/business/purchase">
           <template #title>
-            <el-icon><Goods /></el-icon>
-            <span>业务管理</span>
+            <el-icon><Document /></el-icon>
+            <span>收购管理</span>
           </template>
           <el-menu-item index="/business/purchase/reserve">收购预约</el-menu-item>
-          <el-menu-item index="/business/purchase/weighing">称重计量</el-menu-item>
+          <el-menu-item index="/business/purchase/weighing">称重记录</el-menu-item>
           <el-menu-item index="/business/purchase/order">收购单据</el-menu-item>
-          <el-menu-item index="/business/purchase/payment">收购付款</el-menu-item>
-          <el-menu-item index="/business/warehouse/inbound">粮食入库</el-menu-item>
-          <el-menu-item index="/business/warehouse/ledger">库存台账</el-menu-item>
-          <el-menu-item index="/business/sales">粮食销售</el-menu-item>
-          <el-menu-item index="/business/inventory">库存管理</el-menu-item>
+          <el-menu-item index="/business/purchase/payment">付款管理</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="/business/warehouse">
+          <template #title>
+            <el-icon><Box /></el-icon>
+            <span>仓储管理</span>
+          </template>
+          <el-menu-item index="/business/warehouse/inbound">入库管理</el-menu-item>
+          <el-menu-item index="/business/warehouse/inventory">库存管理</el-menu-item>
+          <el-menu-item index="/business/warehouse/check">盘点管理</el-menu-item>
+          <el-menu-item index="/business/warehouse/out">出库管理</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="/business/sales">
+          <template #title>
+            <el-icon><Sell /></el-icon>
+            <span>销售管理</span>
+          </template>
+          <el-menu-item index="/business/sales/order">销售订单</el-menu-item>
+          <el-menu-item index="/business/sales/outbound">出库核销</el-menu-item>
+          <el-menu-item index="/business/sales/payment">收款管理</el-menu-item>
+          <el-menu-item index="/business/sales/reconciliation">对账管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/report">
@@ -108,7 +126,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  House, HomeFilled, Setting, Goods, DataAnalysis,
+  House, HomeFilled, Setting, Goods, DataAnalysis, Document, Box, Sell,
   Fold, Expand, User, ArrowDown
 } from '@element-plus/icons-vue'
 

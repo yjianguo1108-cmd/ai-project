@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.grain.system.common.exception.BusinessException;
 import com.grain.system.module.warehouse.entity.Inventory;
+import com.grain.system.module.warehouse.entity.InventoryLedger;
 import com.grain.system.module.warehouse.mapper.InventoryLedgerMapper;
+import com.grain.system.module.warehouse.mapper.InventoryMapper;
 import com.grain.system.module.warehouse.service.InventoryLedgerService;
 import com.grain.system.module.warehouse.vo.InventoryLedgerVO;
 import com.grain.system.module.system.entity.Grain;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class InventoryLedgerServiceImpl implements InventoryLedgerService {
 
+    private final InventoryMapper inventoryMapper;
     private final InventoryLedgerMapper ledgerMapper;
     private final GrainMapper grainMapper;
     private final StoragePositionMapper positionMapper;
@@ -36,15 +39,13 @@ public class InventoryLedgerServiceImpl implements InventoryLedgerService {
 
     @Override
     public InventoryLedgerVO getLedgerById(Integer id) {
-        Inventory inventory = ledgerMapper.selectById(id);
-        if (inventory == null) throw new BusinessException("库存记录不存在");
-        return convertToVO(inventory);
+        return ledgerMapper.selectLedgerById(id);
     }
 
     @Override
     @Transactional
     public void adjustWeight(Integer id, BigDecimal adjustWeight, String reason, Integer operatorId) {
-        Inventory inventory = ledgerMapper.selectById(id);
+        Inventory inventory = inventoryMapper.selectById(id);
         if (inventory == null) throw new BusinessException("库存记录不存在");
 
         BigDecimal newStock = inventory.getCurrentStock().add(adjustWeight);
@@ -54,7 +55,7 @@ public class InventoryLedgerServiceImpl implements InventoryLedgerService {
 
         inventory.setCurrentStock(newStock);
         inventory.setBookStock(newStock);
-        ledgerMapper.updateById(inventory);
+        inventoryMapper.updateById(inventory);
     }
 
     private InventoryLedgerVO convertToVO(Inventory inventory) {

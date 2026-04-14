@@ -84,6 +84,34 @@ public class InboundOrderServiceImpl implements InboundOrderService {
 
     @Override
     @Transactional
+    public void createInboundForPurchaseOrder(Integer purchaseOrderId, Integer positionId, Integer operatorId) {
+        PurchaseOrder order = orderMapper.selectById(purchaseOrderId);
+        if (order == null) throw new BusinessException("收购单据不存在");
+        if (order.getStatus() != 3) throw new BusinessException("只有已完成的收购单据可以入库");
+
+        Integer actualPositionId = positionId;
+        if (actualPositionId == null) {
+            LambdaQueryWrapper<StoragePosition> posWrapper = new LambdaQueryWrapper<>();
+            posWrapper.eq(StoragePosition::getStatus, 1).last("LIMIT 1");
+            StoragePosition defaultPosition = positionMapper.selectOne(posWrapper);
+            if (defaultPosition == null) throw new BusinessException("没有可用的储位，请先配置储位");
+            actualPositionId = defaultPosition.getId();
+        }
+
+        InboundOrder inbound = new InboundOrder();
+        inbound.setInboundNo(generateInboundNo());
+        inbound.setPurchaseOrderId(purchaseOrderId);
+        inbound.setGrainId(order.getGrainId());
+        inbound.setPositionId(actualPositionId);
+        inbound.setNetWeight(order.getActualWeight());
+        inbound.setInboundType(0);
+        inbound.setStatus(0);
+        inbound.setCreateUserId(operatorId);
+        inboundMapper.insert(inbound);
+    }
+
+    @Override
+    @Transactional
     public void confirmInbound(Integer id, Integer operatorId) {
         InboundOrder inbound = inboundMapper.selectById(id);
         if (inbound == null) throw new BusinessException("入库单不存在");

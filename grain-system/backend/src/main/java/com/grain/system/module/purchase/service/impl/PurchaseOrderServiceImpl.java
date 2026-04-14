@@ -20,6 +20,7 @@ import com.grain.system.module.system.entity.User;
 import com.grain.system.module.system.mapper.FarmerMapper;
 import com.grain.system.module.system.mapper.GrainMapper;
 import com.grain.system.module.system.mapper.UserMapper;
+import com.grain.system.module.warehouse.service.InboundOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final GrainMapper grainMapper;
     private final UserMapper userMapper;
     private final StringRedisTemplate redisTemplate;
+    private final InboundOrderService inboundOrderService;
 
     private static final DateTimeFormatter ORDER_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -127,6 +129,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         order.setStatus(3);
         orderMapper.updateById(order);
+
+        inboundOrderService.createInboundForPurchaseOrder(order.getId(), null, operatorId);
     }
 
     @Override

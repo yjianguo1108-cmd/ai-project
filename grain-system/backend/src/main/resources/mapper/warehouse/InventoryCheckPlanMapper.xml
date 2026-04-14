@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.warehouse.mapper.InventoryCheckPlanMapper">
+
+    <select id="selectPlanPage" resultType="com.grain.system.module.warehouse.entity.InventoryCheckPlan">
+        SELECT id, check_no, check_type, scope_grain_ids, scope_position_ids, operator_ids,
+               deadline, status, total_items, checked_items, match_rate, report_url,
+               create_user_id, create_time, complete_time
+        FROM t_inventory_check
+        WHERE 1=1
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="checkType != null">
+            AND check_type = #{checkType}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPlanById" resultType="com.grain.system.module.warehouse.entity.InventoryCheckPlan">
+        SELECT id, check_no, check_type, scope_grain_ids, scope_position_ids, operator_ids,
+               deadline, status, total_items, checked_items, match_rate, report_url,
+               create_user_id, create_time, complete_time
+        FROM t_inventory_check WHERE id = #{id}
+    </select>
+
+</mapper>

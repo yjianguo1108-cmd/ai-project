@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grain.system.module.sales.mapper.SalesPaymentMapper">
+
+    <resultMap id="SalesPaymentVOMap" type="com.grain.system.module.sales.vo.SalesPaymentVO">
+        <id column="id" property="id"/>
+        <result column="payment_no" property="paymentNo"/>
+        <result column="sales_order_id" property="salesOrderId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="org_id" property="orgId"/>
+        <result column="org_name" property="orgName"/>
+        <result column="total_receivable" property="totalReceivable"/>
+        <result column="received_amount" property="receivedAmount"/>
+        <result column="unreceived_amount" property="unreceivedAmount"/>
+        <result column="status" property="status"/>
+        <result column="status_name" property="statusName"/>
+        <result column="is_locked" property="isLocked"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectPaymentPage" resultMap="SalesPaymentVOMap">
+        SELECT p.id, p.payment_no, p.sales_order_id, p.org_id,
+               p.total_receivable, p.received_amount,
+               (COALESCE(p.total_receivable, 0) - COALESCE(p.received_amount, 0)) AS unreceived_amount,
+               p.status, p.is_locked, p.create_time, p.update_time,
+               s.order_no,
+               o.org_name,
+               CASE p.status WHEN 0 THEN '未收款' WHEN 1 THEN '部分收款' WHEN 2 THEN '已收款' WHEN 3 THEN '已锁定' ELSE '未知' END AS status_name
+        FROM t_sales_payment p
+        INNER JOIN t_sales_order s ON p.sales_order_id = s.id
+        INNER JOIN t_downstream_org o ON p.org_id = o.id
+        WHERE 1=1
+        <if test="orgId != null">
+            AND p.org_id = #{orgId}
+        </if>
+        <if test="status != null">
+            AND p.status = #{status}
+        </if>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="selectPaymentById" resultMap="SalesPaymentVOMap">
+        SELECT p.id, p.payment_no, p.sales_order_id, p.org_id,
+               p.total_receivable, p.received_amount,
+               (COALESCE(p.total_receivable, 0) - COALESCE(p.received_amount, 0)) AS unreceived_amount,
+               p.status, p.is_locked, p.create_time, p.update_time,
+               s.order_no,
+               o.org_name,
+               CASE p.status WHEN 0 THEN '未收款' WHEN 1 THEN '部分收款' WHEN 2 THEN '已收款' WHEN 3 THEN '已锁定' ELSE '未知' END AS status_name
+        FROM t_sales_payment p
+        INNER JOIN t_sales_order s ON p.sales_order_id = s.id
+        INNER JOIN t_downstream_org o ON p.org_id = o.id
+        WHERE p.id = #{id}
+    </select>
+
+</mapper>
