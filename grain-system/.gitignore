@@ -6,6 +6,12 @@ dist-ssr/
 .env.local
 .vite/
 .DS_Store
+# 前端依赖与缓存
+
+**/node_modules/
+frontend/node_modules/
+# Java 编译文件
+*.iml
 
 # Java
 target/
